@@ -1,15 +1,27 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import useShowToast from './useShowToast';
 import { useRecoilValue } from 'recoil';
 import userAtom from '../atoms/userAtom';
+import { useSocket } from '../context/SocketContext';
 
 const useFollowUnfollow = (user) => {
     const currentUser = useRecoilValue(userAtom);
     const [following, setFollowing] = useState(user.followers.includes(currentUser?._id));
     const [updating, setUpdating] = useState(false);
+    const { socket } = useSocket();
     const showToast = useShowToast();
     const [followersNumber, setFollowersNumber] = useState(user.followers.length);
     const [followingNumber, setFollowingNumber] = useState(user.following.length);
+
+    useEffect(() => {
+      if (!socket) return;
+
+      socket.on("followUnfollow", ({currentPageUser}) => {
+        setFollowersNumber(currentPageUser.followers.length);
+        setFollowingNumber(currentPageUser.following.length);
+      });
+      return () => socket.off("followUnfollow");
+    }, [ followersNumber, followingNumber])
     const handleFollowUnfollow = async () => {
         if (!currentUser) {
           showToast("Error", "You must be logged in to follow", "error");

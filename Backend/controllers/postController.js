@@ -1,6 +1,8 @@
 import Post from "../models/postModel.js";
 import User from "../models/userModel.js";
 import { v2 as cloudinary } from "cloudinary";
+import { getRecipientSocketId, io } from "../socket/socket.js";
+import Notify from "../models/notifycationModel.js";
 
 const creatPost = async (req, res) => {
   try {
@@ -11,10 +13,6 @@ const creatPost = async (req, res) => {
     const user = await User.findById(postedBy);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
-    }
-
-    if (user._id.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const maxLength = 500;
@@ -107,20 +105,122 @@ const deletePost = async (req, res) => {
     console.log("Error in deletePost: ", error);
   }
 };
-
-const likeUnlikePost = async (req, res) => {
+const updatePost = async (req, res) => {
   try {
+    const { text } = req.body;
+    let { img, video } = req.body;
+
+    // Tìm bài post theo ID
     const post = await Post.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
+
+    // Kiểm tra quyền chỉnh sửa
+    if (post.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ error: "You can't update others' posts" });
+    }
+
+    if (img) {
+      if (post.img) {
+        const img_id = post.img.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(img_id);
+      }
+      const uploadResponse = await cloudinary.uploader.upload(img);
+      post.img = uploadResponse.secure_url;
+    } else if (!img && post.img) {
+      const img_id = post.img.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(img_id);
+      post.img = "";
+    }
+
+    // Handle video update or removal
+    if (video) {
+      if (post.video) {
+        const video_id = post.video.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(video_id, {
+          resource_type: "video",
+        });
+      }
+      const uploadResponse = await cloudinary.uploader.upload(video, {
+        resource_type: "video",
+      });
+      post.video = uploadResponse.secure_url;
+    } else if (!video && post.video) {
+      const video_id = post.video.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(video_id, {
+        resource_type: "video",
+      });
+      post.video = "";
+    }
+
+    // Kiểm tra độ dài của text
+    const maxLength = 500;
+    if (text.length > maxLength) {
+      return res
+        .status(400)
+        .json({ error: `Text must be less than ${maxLength} characters` });
+    }
+
+
+    // Cập nhật các thuộc tính của post
+    post.text = text;
+
+    // Lưu lại post đã được cập nhật
+    await post.save();
+
+    res.status(200).json({ message: "Update successfully!", post });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+    console.log("Error in updatePost: ", error);
+  }
+};
+
+
+const likeUnlikePost = async (req, res) => {
+  try {
+    const username = req.user.username;
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    let actionType;
     if (!post.likes.includes(req.user._id)) {
       await post.updateOne({ $push: { likes: req.user._id } });
-      res.status(200).json({ message: "Post liked successfully" });
+      actionType = "like";
     } else {
       await post.updateOne({ $pull: { likes: req.user._id } });
-      res.status(200).json({ message: "Post unliked successfully" });
+      actionType = "unlike";
     }
+
+    let notify = new Notify({
+      postId: post._id,
+      type: actionType,
+      username: username,
+      userId: post.postedBy,
+      profilePic: req.user.profilePic,
+    });
+
+    if (
+      post.postedBy.toString() !== req.user._id.toString() &&
+      actionType === "like"
+    ) {
+      await notify.save();
+      const recipientSocketId = getRecipientSocketId(post.postedBy);
+      // Emit notification to the post owner
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("newNotification", notify);
+      }
+    }
+    // Emit notification to all connected users with the topic "updateLikeReply"
+    io.emit("updateLikeReply", {
+      postId: post._id,
+      type: actionType,
+      userId: req.user._id,
+    });
+
+    res.status(200).json({ message: `Post ${actionType}d successfully` });
   } catch (error) {
     res.status(500).json({ error: error.message });
     console.log("Error in likeUnlikePost: ", error);
@@ -148,9 +248,33 @@ const replyPost = async (req, res) => {
       text,
       userProfilePic,
       username,
+      updatedAt: new Date(),
     };
 
     await post.updateOne({ $push: { replies: reply } });
+
+    if (post.postedBy.toString() !== userId.toString()) {
+      const notify = new Notify({
+        postId: post._id,
+        type: "reply",
+        username: username,
+        userId: post.postedBy,
+        profilePic: userProfilePic,
+      });
+      await notify.save();
+      const recipientSocketId = getRecipientSocketId(post.postedBy);
+      // Emit notification to the post owner
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("newNotification", notify);
+      }
+    }
+
+    io.emit("updateLikeReply", {
+      postId: post._id,
+      userId: userId,
+      type: "reply",
+      reply: reply,
+    });
     res.status(200).json(reply);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -190,52 +314,65 @@ const rePost = async (req, res) => {
         },
       }) // Populate the original post's postedBy field
       .exec();
-
+    if (post.postedBy.toString() !== userId.toString()) {
+      const notify = new Notify({
+        postId: post._id,
+        type: "repost",
+        username: req.user.username,
+        userId: post.postedBy,
+        profilePic: req.user.profilePic,
+      });
+      await notify.save();
+      const recipientSocketId = getRecipientSocketId(post.postedBy);
+      // Emit notification to the post owner
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("newNotification", notify);
+      }
+    }
+    io.emit("updateLikeReply", {
+      postId: post._id,
+      userId: userId,
+      type: "repost",
+    });
     res.status(200).json(newPost);
   } catch (error) {
     res.status(500).json({ error: error.message });
     console.log("Error in rePost: ", error);
   }
 };
-// const rePost = async (req, res) => {
-//     try {
-//         const {text}  = req.body;
-//         const postId = req.params.id;
-//         const userId = req.user._id;
-
-//         const post = await Post.findById(postId);
-//         if (!post) {
-//             return res.status(404).json({ error: "Post not found" });
-//         }
-//         const rePost = {
-//             userId, text
-//         }
-//         await post.updateOne({ $push: { rePosts: rePost } });
-//         res.status(200).json(rePost);
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//         console.log("Error in rePost: ", error);
-//     }
-// }
 
 const getLikesPost = async (req, res) => {
   try {
     const userId = req.user._id;
 
     // Fetch posts liked by the user, including repost details and user information
-    const posts = await Post.find({ likes: { $in: [userId] } }).populate({
-      path: "repost",
-      populate: {
-        path: "postedBy",
-        model: "User",
-        select: "username profilePic",
-      },
-    });
+    const posts = await Post.find({ likes: { $in: [userId] } })
+      .populate({
+        path: "repost",
+        populate: {
+          path: "postedBy",
+          model: "User",
+          select: "username profilePic",
+        },
+      })
+      .sort({ createdAt: -1 });
 
     res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({ error: error.message });
     console.log("Error in getLikesPost: ", error);
+  }
+};
+
+const getNotificaions = async (req, res) => {
+  try {
+    const notifications = await Notify.find({ userId: req.user._id }).sort({
+      createdAt: -1,
+    });
+    res.status(200).json(notifications);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+    console.log("Error in getNotificaions: ", error);
   }
 };
 
@@ -274,6 +411,7 @@ const getfeedPost = async (req, res) => {
 
     // Concatenate the posts
     posts = posts.concat(followingPosts);
+    posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // If no posts are found, get random posts
     if (posts.length === 0) {
@@ -340,4 +478,6 @@ export {
   replyPost,
   getfeedPost,
   getUserPost,
+  getNotificaions,
+  updatePost,
 };

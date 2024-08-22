@@ -4,6 +4,7 @@ import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCooki
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 import Post from "../models/postModel.js";
+import { io } from "../socket/socket.js";
 
 const getUserProfile = async (req, res, next) => {
   // get data by id or username
@@ -177,6 +178,7 @@ const followUnfollowUser = async (req, res) => {
       await User.findByIdAndUpdate(req.user._id, { $pull: { following: id } });
       await User.findByIdAndUpdate(id, { $pull: { followers: req.user._id } });
       const currentPageUser = await User.findById(id);
+      io.emit("followUnfollow", {currentPageUser: currentPageUser});
       res
         .status(200)
         .json({
@@ -188,6 +190,7 @@ const followUnfollowUser = async (req, res) => {
       await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
       await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
       const currentPageUser = await User.findById(id);
+      io.emit("followUnfollow", {currentPageUser: currentPageUser});
       res
         .status(200)
         .json({

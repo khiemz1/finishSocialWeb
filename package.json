@@ -1,11 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js",
-    "start": "nodemon --experimental-modules --es-module-specifier-resolution=node server.js"
+    "dev": "cross-env NODE_ENV=development nodemon Backend/server.js",
+    "start": "cross-env NODE_ENV=production node Backend/server.js",
+    "build": "npm install && npm install --prefix Frontend && npm run build --prefix Frontend"
   },
   "type": "module",
   "author": "",
@@ -24,5 +24,8 @@
     "socket.io": "^4.7.5",
     "winston": "^3.13.1",
     "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }

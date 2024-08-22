@@ -38,7 +38,6 @@ function UserHeader({ user }) {
       showToast("Copied", "URL copied to clipboard", "success");
     });
   };
-  console.log(user);
 
   
   return (
@@ -62,7 +61,6 @@ function UserHeader({ user }) {
           </Flex>
         </Box>
         <Box>
-          {user.profilePic && (
             <Avatar
               name={user.name}
               src={user.profilePic}
@@ -71,18 +69,6 @@ function UserHeader({ user }) {
                 md: "xl",
               }}
             />
-          )}
-
-          {!user.profilePic && (
-            <Avatar
-              name={user.name}
-              src="/zuck-avatar.png"
-              size={{
-                base: "md",
-                md: "xl",
-              }}
-            />
-          )}
         </Box>
       </Flex>
 

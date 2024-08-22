@@ -23,6 +23,7 @@ import postsAtom from "../atoms/postsAtom";
 import { FaRegSmile } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { useParams } from "react-router-dom";
+import { useSocket } from "../context/SocketContext";
 
 const Actions = ({ post }) => {
   const user = useRecoilValue(userAtom);
@@ -37,12 +38,57 @@ const Actions = ({ post }) => {
   const emojiPickerRef = useRef(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRepost, setIsRepost] = useState(false);
+  const { socket } = useSocket();
   
+  
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("updateLikeReply", ({postId, type, userId, reply}) => {
+      if (type === "like") {
+        setPosts((prev) => {
+          return prev.map((p) => {
+            if (p._id === postId) {
+              return {
+                ...p,
+                likes: [...p.likes, userId],
+              };
+            } else {
+              return p;
+            }
+          });
+        });
+      }
+      if (type === "unlike") {
+        setPosts((prev) => {
+          return prev.map((p) => {
+            if (p._id === postId) {
+              return { ...p, likes: p.likes.filter((id) => id !== userId) };
+            }
+            return p;
+          });
+        })
+      }
+      if (type === "reply") {
+        
+        setPosts((prev) =>
+          prev.map((p) =>
+            p._id === postId ? { ...p, replies: [reply, ...p.replies] } : p
+          )
+        );
+      }
+      if (type === "repost") {
+        
+        setPosts((prev) =>
+          prev.map((p) =>
+            p._id === postId ? { ...p, rePosts: [reply, ...p.rePosts] } : p
+          )
+        );
+      }
+      
+    });
 
-  function repLyOrRepost(state) {
-    setIsRepost(state);
-    onOpen();
-  }
+    return () => socket.off("updateLikeReply");
+  }, [socket]);
 
   const onEmojiClick = (emojiData, event) => {
     setReply((prevText) => prevText + emojiData.emoji);
@@ -175,10 +221,11 @@ const Actions = ({ post }) => {
         return p;
       });
       setPosts(updatedPosts);
-        setPosts([data, ...posts]);
       showToast("Success", "Reposted successfully", "success");
       onClose();
       setReply("");
+      console.log(posts);
+      
     } catch (error) {
       showToast("Error", error.message, "error");
     } finally {

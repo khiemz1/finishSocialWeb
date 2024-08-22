@@ -6,9 +6,15 @@ import {
   Divider,
   Flex,
   Image,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Portal,
   Skeleton,
   SkeletonCircle,
   Text,
+  useColorMode,
   useColorModeValue,
 } from "@chakra-ui/react";
 import React, { useEffect, useRef, useState } from "react";
@@ -37,9 +43,76 @@ const MessageContainer = () => {
   const { socket, onlineUsers } = useSocket();
   const [conversations, setConversations] = useRecoilState(conversationsAtom);
   const messageEndRef = useRef(null);
+  const { colorMode } = useColorMode();
 
   // console.log("selectedConversation", selectedConversation)
   let isOnline = onlineUsers.includes(selectedConversation.userID);
+
+  const handleDeleteMessage = async (message) => {
+    
+    try {
+      const res = await fetch(`/api/messages/delete/${message._id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.error) {
+        showToast("Error", data.error, "error");
+        return;
+      }
+      // console.log(data);
+      
+      if (message._id === data.lastMessage._id) {
+        setConversations((prev) => {
+          const updatedConversations = prev.map((conversation) => {
+            if (conversation._id === message.conversationId) {
+              return data.conversation;
+            }
+            return conversation;
+          });
+          return updatedConversations;
+        });
+      }
+      setMessages((prev) => prev.filter((m) => m._id !== message._id));
+      
+      showToast("Success", "Message deleted successfully", "success");
+    } catch (error) {
+      showToast("Error", error.message, "error");
+    }
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("deleteMessage", ({message, conversation, lastMessage}) => {
+      
+      if (message._id === lastMessage._id ) {
+        setConversations((prev) => {
+          const updatedConversations = prev.map((conv) => {
+            if (conv._id ===conversation._id) {
+              return {
+                ...conv,
+              lastMessage: {
+                text: conversation.lastMessage.text,
+                img: null,
+                video: null,
+                sender: null,
+              },
+              }
+            }
+            return conv;
+          });
+          return updatedConversations;
+        });
+      }
+      if (
+        selectedConversation &&
+        selectedConversation.userID === message.sender
+      ) {
+        setMessages((prev) => prev.filter((m) => m._id !== message._id));
+      }
+    });
+    return () => socket.off("deleteMessage");
+  }, [socket, selectedConversation, setConversations]);
 
   useEffect(() => {
     if (!socket) return;
@@ -57,8 +130,8 @@ const MessageContainer = () => {
       }
 
       if (!document.hasFocus()) {
-        // const sound = new Audio(messageSound);
-        // sound.play();
+        const sound = new Audio(messageSound);
+        sound.play();
 
         if (Notification.permission === "granted") {
           new Notification("New Message", {
@@ -73,7 +146,7 @@ const MessageContainer = () => {
 
       setConversations((prev) => {
         const updatedConversations = prev.map((conversation) => {
-          if (conversation.participants[0]._id === message.sender) {
+          if ( conversation._id === message.conversationId || conversation.participants[0]._id === message.sender) {
             conversationAlreadyExists = true;
             return {
               ...conversation,
@@ -269,11 +342,28 @@ const MessageContainer = () => {
                   ? messageEndRef
                   : null
               }
+              alignSelf={
+                currentUser._id === message.sender ? "flex-end" : "flex-start"
+              }
             >
-              <Message
-                message={message}
-                ownMessage={currentUser._id === message.sender}
-              />
+              <Menu>
+                <MenuButton>
+                  <Message
+                    message={message}
+                    ownMessage={currentUser._id === message.sender}
+                  />
+                </MenuButton>
+                <Portal>
+                  <MenuList bg={colorMode === "dark" ? "gray.dark" : "white"}>
+                    <MenuItem
+                      bg={colorMode === "dark" ? "gray.dark" : "white"}
+                      onClick={() => handleDeleteMessage(message)}
+                    >
+                      delete
+                    </MenuItem>
+                  </MenuList>
+                </Portal>
+              </Menu>
             </Flex>
           ))}
       </Flex>

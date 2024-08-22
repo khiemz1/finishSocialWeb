@@ -8,6 +8,6 @@ router.use(protectRoute);
 router.get("/conversations", getConversations);
 router.post("/", sendMessage);
 router.get("/:otherUserId", getMessages);
-router.delete("/delete/:conversationId", deleteMessages);
+router.delete("/delete/:messageId", deleteMessages);
 
 export default router;

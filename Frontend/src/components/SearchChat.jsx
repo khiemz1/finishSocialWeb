@@ -56,7 +56,7 @@ const SearchChat = ({ followers }) => {
   return (
     <Flex direction="column" alignItems="center">
       <form>
-        <Flex alignItems={"center"} w={"290px"} m={"auto"}>
+        <Flex alignItems={"center"} w={ {base: "290px", lg: "400px"}} m={2}>
           <InputGroup>
             <Input
             id="search"

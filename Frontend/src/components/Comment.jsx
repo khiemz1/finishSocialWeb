@@ -3,7 +3,6 @@ import CommentAction from "./commentAction";
 import { formatDistanceToNow } from "date-fns";
 
 const Comment = ({ reply, lastReply }) => {
-  console.log(reply);
 
   return (
     <>

@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useRecoilState, useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import postsAtom from "../atoms/postsAtom";
+import EditPost from "./EditPost";
 
 const Posts = ({ post, postedBy }) => {
   const [liked, setLiked] = useState(false);
@@ -140,6 +141,12 @@ const Posts = ({ post, postedBy }) => {
               {currentUser?._id === user?._id && (
                 <DeleteIcon size={20} onClick={handleDeletePost} />
               )}
+              {currentUser?._id === user?._id && (
+                <Box onClick={(e) => e.preventDefault()}>
+                <EditPost post={post}/>
+              </Box>
+              )}
+              
             </Flex>
           </Flex>
 

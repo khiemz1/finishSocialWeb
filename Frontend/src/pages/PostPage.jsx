@@ -21,6 +21,7 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import { DeleteIcon } from "@chakra-ui/icons";
 import userAtom from "../atoms/userAtom";
 import postsAtom from "../atoms/postsAtom";
+import EditPost from "../components/EditPost";
 
 function PostPage() {
   const { user, loading } = useGetUserProfile();
@@ -30,7 +31,7 @@ function PostPage() {
   const currentUser = useRecoilValue(userAtom);
   const navigate = useNavigate();
 
-  const currentPost = posts[0];
+  const currentPost = posts.find((post) => post._id === pid);
 
   useEffect(() => {
     const getPost = async () => {
@@ -43,7 +44,6 @@ function PostPage() {
           return;
         }
         setPosts([data]);
-        console.log(data);
       } catch (error) {
         showToast("Error", error.message, "error");
       }
@@ -59,7 +59,7 @@ function PostPage() {
       }
       const res = await fetch(`/api/posts/delete/${currentPost._id}`, {
         method: "DELETE",
-      })
+      });
       const data = await res.json();
       if (data.error) {
         showToast("Error", data.error, "error");
@@ -70,7 +70,7 @@ function PostPage() {
     } catch (error) {
       showToast("Error", error.message, "error");
     }
-  }
+  };
 
   if (!user && loading) {
     return (
@@ -86,12 +86,23 @@ function PostPage() {
     <Box maxW={"600px"} m={"auto"}>
       <Flex>
         <Flex w={"full"} alignItems={"center"} gap={3}>
-          <Avatar src={user.profilePic} size={"md"} name="Mark Zuckerberg" />
+          <Avatar
+            src={user.profilePic}
+            size={"md"}
+            name="Mark Zuckerberg"
+            onClick={() => navigate("/" + user.username)}
+            cursor={"pointer"}
+          />
           <Flex>
-            <Text fontSize={"sm"} fontWeight={"bold"}>
+            <Text
+              fontSize={"sm"}
+              fontWeight={"bold"}
+              onClick={() => navigate("/" + user.username)}
+              cursor={"pointer"}
+            >
               {user.username}
             </Text>
-            <Image src="/verified.png" w={"4"} h={4} ml={4} />
+            <Image src="/verified.png" w={"4"} h={4} ml={1} mt={1} />
           </Flex>
         </Flex>
         <Flex gap={4} alignItems={"center"}>
@@ -104,12 +115,23 @@ function PostPage() {
             {formatDistanceToNow(new Date(currentPost.createdAt))} ago
           </Text>
           {currentUser?._id === user?._id && (
-            <DeleteIcon size={20} cursor={"pointer"} onClick={handleDeletePost} />
+            <DeleteIcon
+              size={20}
+              cursor={"pointer"}
+              onClick={handleDeletePost}
+            />
+          )}
+          {currentUser?._id === user?._id && (
+            <Box onClick={(e) => e.preventDefault()}>
+              <EditPost post={currentPost} />
+            </Box>
           )}
         </Flex>
       </Flex>
 
-      <Text ml={10} my={3}>{currentPost.text}</Text>
+      <Text ml={10} my={3}>
+        {currentPost.text}
+      </Text>
       {currentPost.img && (
         <Box
           borderRadius={6}
@@ -123,130 +145,130 @@ function PostPage() {
         </Box>
       )}
       {currentPost.video && (
-            <Box
-              borderRadius={6}
-              overflow={"hidden"}
-              border={"1px solid"}
-              borderColor={"gray.light"}
-              w={"60%"}
-              m={"auto"}
-            >
-              <video
-                    src={currentPost.video}
+        <Box
+          borderRadius={6}
+          overflow={"hidden"}
+          border={"1px solid"}
+          borderColor={"gray.light"}
+          w={"60%"}
+          m={"auto"}
+        >
+          <video
+            src={currentPost.video}
+            alt="Selected video"
+            controls
+            style={{
+              width: "100%",
+              height: "auto",
+              maxHeight: "300px",
+              objectFit: "contain",
+            }}
+          />
+        </Box>
+      )}
+
+      {currentPost.repost && (
+        <Link
+          to={`/${currentPost.repost.postedBy.username}/post/${currentPost.repost._id}`}
+        >
+          <Flex
+            gap={3}
+            m={"auto"}
+            py={5}
+            maxW={"80%"}
+            padding={6}
+            border={"1px solid"}
+            borderColor={"gray.light"}
+            borderRadius={6}
+          >
+            <Flex flexDirection={"column"} alignItems={"center"}>
+              <Avatar
+                size="md"
+                src={currentPost.repost.postedBy.profilePic}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/${currentPost.repost.postedBy.username}`);
+                }}
+              />
+            </Flex>
+            <Flex flex={1} flexDirection={"column"} gap={2}>
+              <Flex justifyContent={"space-between"} w={"full"}>
+                <Flex w={"full"} alignItems={"center"}>
+                  <Text
+                    fontSize={"sm"}
+                    fontWeight={"bold"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate(`/${currentPost.repost.postedBy.username}`);
+                    }}
+                  >
+                    {currentPost.repost.postedBy.username}
+                  </Text>
+                  <Image src="/verified.png" w={4} h={4} ml={1} />
+                </Flex>
+                <Flex gap={4} alignItems={"center"}>
+                  <Text
+                    fontSize={"xs"}
+                    width={36}
+                    textAlign={"right"}
+                    color={"gray.light"}
+                  >
+                    {formatDistanceToNow(
+                      new Date(currentPost.repost.createdAt)
+                    )}{" "}
+                    ago
+                  </Text>
+                </Flex>
+              </Flex>
+
+              <Text fontSize={"sm"}>{currentPost.repost.text}</Text>
+              {currentPost.repost.img && (
+                <Box
+                  borderRadius={6}
+                  overflow={"hidden"}
+                  border={"1px solid"}
+                  borderColor={"gray.light"}
+                >
+                  <Image src={currentPost.repost.img} w={"full"} />
+                </Box>
+              )}
+              {currentPost.repost.video && (
+                <Box
+                  borderRadius={6}
+                  overflow={"hidden"}
+                  border={"1px solid"}
+                  borderColor={"gray.light"}
+                >
+                  <video
+                    src={currentPost.repost.video}
                     alt="Selected video"
                     controls
                     style={{
                       width: "100%",
-                    height: "auto",
-                    maxHeight: "300px",
-                    objectFit: "contain",
+                      height: "auto",
+                      maxHeight: "300px",
+                      objectFit: "contain",
                     }}
                   />
-            </Box>
-          )}
-
-          {currentPost.repost && (
-            <Link to={`/${currentPost.repost.postedBy.username}/post/${currentPost.repost._id}`}>
-            <Flex gap={3} m={"auto"} py={5} maxW={"80%"} padding={6}
-            border={"1px solid"} 
-            borderColor={"gray.light"}
-            borderRadius={6}>
-            <Flex flexDirection={"column"} alignItems={"center"}>
-                <Avatar
-                  size='md'
-                  src={currentPost.repost.postedBy.profilePic}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate(`/${currentPost.repost.postedBy.username}`);
-                  }}
-                />
-              </Flex>
-              <Flex flex={1} flexDirection={"column"} gap={2}>
-                <Flex justifyContent={"space-between"} w={"full"}>
-                  <Flex w={"full"} alignItems={"center"}>
-                    <Text
-                      fontSize={"sm"}
-                      fontWeight={"bold"}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate(`/${currentPost.repost.postedBy.username}`);
-                      }}
-                    >
-                      {currentPost.repost.postedBy.username}
-                    </Text>
-                    <Image src="/verified.png" w={4} h={4} ml={1} />
-                  </Flex>
-                  <Flex gap={4} alignItems={"center"}>
-                      <Text
-                        fontSize={"xs"}
-                        width={36}
-                        textAlign={"right"}
-                        color={"gray.light"}
-                      >
-                        {formatDistanceToNow(new Date(currentPost.repost.createdAt))}{" "}
-                        ago
-                      </Text>
-                    </Flex>
-                </Flex>
-      
-                <Text fontSize={"sm"}>{currentPost.repost.text}</Text>
-                {currentPost.repost.img && (
-                  <Box
-                    borderRadius={6}
-                    overflow={"hidden"}
-                    border={"1px solid"}
-                    borderColor={"gray.light"}
-                  >
-                    <Image src={currentPost.repost.img} w={"full"} />
-                  </Box>
-                )}
-                {currentPost.repost.video && (
-                  <Box
-                    borderRadius={6}
-                    overflow={"hidden"}
-                    border={"1px solid"}
-                    borderColor={"gray.light"}
-                  >
-                    <video
-                          src={currentPost.repost.video}
-                          alt="Selected video"
-                          controls
-                          style={{
-                            width: "100%",
-                          height: "auto",
-                          maxHeight: "300px",
-                          objectFit: "contain",
-                          }}
-                        />
-                  </Box>
-                )}
-      
-              </Flex>
+                </Box>
+              )}
             </Flex>
-          </Link>
-          )}
+          </Flex>
+        </Link>
+      )}
 
       <Flex gap={3} my={3}>
         <Actions post={currentPost} />
       </Flex>
 
-      {/* <Divider my={4}></Divider>
-      <Flex justifyContent={"space-between"}>
-        <Flex gap={2} alignItems={"center"}>
-          <Text fontSize={"2xl"}>🤘</Text>
-          <Text color={"gray.light"}> Get the app to like, reply and post</Text>
-        </Flex>
-        <Button>Get</Button>
-      </Flex> */}
       <Divider my={4}></Divider>
       {currentPost.replies.map((reply) => (
         <Comment
-        key={reply._id}
-        reply={reply}
-        lastReply={reply._id === currentPost.replies[0]._id}
+          key={reply._id}
+          reply={reply}
+          lastReply={reply._id === currentPost.replies[0]._id}
         />
       ))}
-      
     </Box>
   );
 }

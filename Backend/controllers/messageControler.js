@@ -64,7 +64,6 @@ async function sendMessage(req, res) {
       profilePic: senderDetails ? senderDetails.profilePic : null,
     };
 
-
     const recipientSocketId = getRecipientSocketId(recipientId);
     if (recipientSocketId) {
       io.to(recipientSocketId).emit("newMessage", newMessage);
@@ -100,34 +99,60 @@ async function getMessages(req, res) {
 }
 
 async function deleteMessages(req, res) {
-  const { conversationId } = req.params;
+  const { messageId } = req.params;
   const userId = req.user._id;
   try {
-    const messages = await Message.find({ conversationId: conversationId });
+    const message = await Message.findOne({ _id: messageId });
 
-    if (!messages) {
-      return res.status(404).json({ error: "Conversations not found" });
+    if (!message) {
+      return res.status(404).json({ error: "message not found!" });
+    }
+    if (message.sender.toString() !== userId.toString()) {
+      return res
+        .status(401)
+        .json({ error: "You can't delete others messages" });
     }
 
-    messages.forEach(async (message) => {
-      if (message.img) {
-        const img_id = message.img.split("/").pop().split(".")[0];
-        await cloudinary.uploader.destroy(img_id);
-      }
-      if (message.video) {
-        const video_id = message.video.split("/").pop().split(".")[0];
-        const result = await cloudinary.uploader.destroy(video_id, {
-          resource_type: "video",
-        });
-        console.log("video id:", result);
-      }
-    });
+    if (message.img) {
+      const img_id = message.img.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(img_id);
+    }
+    if (message.video) {
+      const video_id = message.video.split("/").pop().split(".")[0];
+      const result = await cloudinary.uploader.destroy(video_id, {
+        resource_type: "video",
+      });
+      console.log("video id:", result);
+    }
 
-    await Message.deleteMany({
-      conversationId: conversationId,
+    const lastMessage = await Message.findOne({
+      conversationId: message.conversationId,
+    })
+    .sort({ createdAt: -1 });
+
+    let conversation;
+    if (lastMessage._id.toString() === message._id.toString()) {
+      conversation = await Conversation.findById(message.conversationId).populate({
+        path: "participants",
+        select: "username profilePic",
+      })
+      .sort({ updatedAt: -1 });
+      conversation.lastMessage.text = "removed a message";
+      conversation.lastMessage.img = null;
+      conversation.lastMessage.video = null;
+      await conversation.save();
+      conversation.participants = conversation.participants.filter(
+        (participant) => participant._id.toString() !== userId.toString()
+      );
+    }
+
+    await Message.deleteOne({
+      _id: messageId,
     });
-    await Conversation.findByIdAndDelete(conversationId);
-    res.status(200).json("messages deleted");
+    io.emit("deleteMessage", {
+      message: message, conversation: conversation, lastMessage: lastMessage
+    });
+    res.status(200).json({message: "messages deleted", conversation: conversation, lastMessage: lastMessage});
   } catch (error) {
     res.status(500).json({ error: error.message });
     console.log("Error in getMessages: ", error);

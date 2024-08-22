@@ -15,8 +15,10 @@ const Message = ({ ownMessage, message }) => {
       {ownMessage ? (
         <Flex gap={2} alignSelf={"flex-end"}>
           {message.text && (
-            <Flex bg={"green.800"} maxW={"350px"} p={1} borderRadius={"md"}>
-              <Text color={"white"}>{message.text}</Text>
+            <Flex bg={"green.800"} p={1} borderRadius={"md"}>
+              <Text color={"white"} maxW={"200px"} pr={2}>
+                {message.text}
+              </Text>
               <Box
                 alignSelf={"flex-end"}
                 ml={1}
@@ -59,12 +61,12 @@ const Message = ({ ownMessage, message }) => {
                 src={message.video}
                 alt="Selected video"
                 controls
-				onLoadedMetadata={() => setVideoLoading(true)}
+                onLoadedMetadata={() => setVideoLoading(true)}
                 style={{
                   width: "50%",
                   maxHeight: "200px",
                   objectFit: "cover",
-				  marginLeft: "auto",
+                  marginLeft: "auto",
                 }}
               />
               <Skeleton w={"200px"} h={"200px"} />
@@ -78,10 +80,10 @@ const Message = ({ ownMessage, message }) => {
                 alt="Selected video"
                 controls
                 style={{
-					width: "100%",          
-					height: "auto",          
-					maxHeight: "300px",      
-					objectFit: "contain", 
+                  width: "100%",
+                  height: "auto",
+                  maxHeight: "300px",
+                  objectFit: "contain",
                 }}
               />
               <Box
@@ -103,9 +105,9 @@ const Message = ({ ownMessage, message }) => {
 
           {message.text && (
             <Text
-              maxW={"350px"}
-              bg={"gray.400"}
+              maxW={"200px"}
               p={1}
+              bg={"gray.400"}
               borderRadius={"md"}
               color={"black"}
             >
@@ -130,18 +132,18 @@ const Message = ({ ownMessage, message }) => {
               <Image src={message.img} alt="Message image" borderRadius={4} />
             </Flex>
           )}
-		  {message.video && !videoLoading && (
+          {message.video && !videoLoading && (
             <Flex mt={5} w={"300px"}>
               <video
                 src={message.video}
                 alt="Selected video"
                 controls
-				onLoadedMetadata={() => setVideoLoading(true)}
+                onLoadedMetadata={() => setVideoLoading(true)}
                 style={{
                   width: "50%",
                   maxHeight: "300px",
                   objectFit: "cover",
-				  marginRight: "auto"
+                  marginRight: "auto",
                 }}
               />
               <Skeleton w={"200px"} h={"200px"} />
@@ -155,10 +157,10 @@ const Message = ({ ownMessage, message }) => {
                 alt="Selected video"
                 controls
                 style={{
-					width: "100%",          
-					height: "auto",          
-					maxHeight: "300px",      
-					objectFit: "contain"
+                  width: "100%",
+                  height: "auto",
+                  maxHeight: "300px",
+                  objectFit: "contain",
                 }}
               />
             </Flex>
