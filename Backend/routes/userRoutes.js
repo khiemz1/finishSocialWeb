@@ -1,8 +1,6 @@
 import express from "express";
 import { signupUser,getSuggestedUsers, loginUser,getFollowers, logoutUser, followUnfollowUser, updateUser, getUserProfile, searchUser} from "../controllers/userController.js";
 import protectRoute from "../middlewares/protectRoute.js";
-import logApiPath from "../middlewares/loggerMiddleware.js";
-import errorHandler from "../middlewares/errorHandler.js";
 const router = express.Router();
 
 

@@ -2,8 +2,6 @@ import express from "express";
 const router = express.Router();
 import { creatPost , getPost,rePost,updatePost, getLikesPost,getNotificaions, deletePost, likeUnlikePost, replyPost, getfeedPost, getUserPost} from "../controllers/postController.js";
 import protectRoute from "../middlewares/protectRoute.js";
-import logApiPath from "../middlewares/loggerMiddleware.js";
-import errorHandler from "../middlewares/errorHandler.js";
 
 router.use(protectRoute);
 
