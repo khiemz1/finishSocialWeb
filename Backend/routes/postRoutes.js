@@ -6,7 +6,6 @@ import logApiPath from "../middlewares/loggerMiddleware.js";
 import errorHandler from "../middlewares/errorHandler.js";
 
 router.use(protectRoute);
-router.use(logApiPath);
 
 router.get("/feed",  getfeedPost);
 router.get("/getLikesPost",  getLikesPost); 
@@ -19,7 +18,5 @@ router.put("/reply/:id",  replyPost);
 router.put("/rePost/:id",  rePost); 
 router.get("/getNotifys",  getNotificaions);
 router.get("/:id",  getPost);
-
-router.use(errorHandler);
 
 export default router;

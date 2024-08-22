@@ -1,0 +1,21 @@
+2024-08-22 10:12:40 info: API Path: /getNotifys - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /login - params: {} - Method: POST - Body: {"username":"tvk1","password":"123456"}
+2024-08-22 10:12:48 info: API Path: /suggested - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /feed - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /profile/66963080855cb3a47cd86224 - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /profile/66963248f2722f860db18e5c - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /profile/66963080855cb3a47cd86224 - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /profile/66963248f2722f860db18e5c - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /profile/66963080855cb3a47cd86224 - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:48 info: API Path: /profile/66963248f2722f860db18e5c - params: {} - Method: GET - Body: {}
+2024-08-22 10:12:52 info: API Path: /getFollowers - params: {} - Method: GET - Body: {}
+2024-08-22 10:13:24 info: API Path: /login - params: {} - Method: POST - Body: {"username":"lưu","password":"1"}
+2024-08-22 10:13:24 error:  Invalid username or password - API Path: /api/users/login - Method: POST - Body: {"username":"lưu","password":"1"}
+2024-08-22 10:13:53 info: API Path: /login - params: {} - Method: POST - Body: {"username":"tvk2","password":"123456"}
+2024-08-22 10:13:56 info: API Path: /getNotifys - params: {} - Method: GET - Body: {}
+2024-08-22 10:13:56 info: API Path: /suggested - params: {} - Method: GET - Body: {}
+2024-08-22 10:13:56 info: API Path: /feed - params: {} - Method: GET - Body: {}
+2024-08-22 10:13:56 info: API Path: /profile/66963080855cb3a47cd86224 - params: {} - Method: GET - Body: {}
+2024-08-22 10:13:56 info: API Path: /profile/66963080855cb3a47cd86224 - params: {} - Method: GET - Body: {}
+2024-08-22 10:13:57 info: API Path: /profile/66963080855cb3a47cd86224 - params: {} - Method: GET - Body: {}
+2024-08-22 10:13:58 info: API Path: /getFollowers - params: {} - Method: GET - Body: {}
