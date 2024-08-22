@@ -35,7 +35,7 @@ const getUserProfile = async (req, res, next) => {
 const getFollowers = async (req, res, next) => {
   const userId = req.user.id;
   try {
-    const userFollowers = await User.find;
+    const userFollowers = await User.find();
 
     if (!userFollowers) {
       return res.status(404).json({ error: "User not found" });
