@@ -35,19 +35,13 @@ const getUserProfile = async (req, res, next) => {
 const getFollowers = async (req, res, next) => {
   const userId = req.user.id;
   try {
-    const userFollowers = await User.find();
+    const userFollowers = await User.find().select("-password -updatedAt -__v");
 
     if (!userFollowers) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const followers = await Promise.all(
-      userFollowers.followers.map(async (followerId) => {
-        return User.findById(followerId).select("-password -updatedAt -__v");
-      })
-    );
-
-    res.status(200).json(followers);
+    res.status(200).json(userFollowers);
   } catch (error) {
     res.status(500).json({ error: error.message });
     next(error);
